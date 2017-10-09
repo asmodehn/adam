@@ -8,8 +8,15 @@ Bullet points in random order
 - when both human and machine can write programs, while potentially representing two different semantics, there need to be a referential semantics. Math and category theory seems to be able to provide such a referential semantics,as well as a practical graphical representation.
 
 
+Category Theory
 
-
+- A monad is just a monoid of endofunctor
+- Free Monad + Interpreter
+- Input is a comonad
+- language is a representation (or check yoneda lemma)
+- Recursion is a fold
+- algebraic data types
+- F-algebras and catamorphisms
 
 
 
