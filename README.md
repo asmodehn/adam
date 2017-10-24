@@ -98,3 +98,9 @@ Also we will try to match the representation to something fitting the familiar f
  CoMonad : CoMonoid of Endofunctor
  
  ##### Natural Transformation : ?
+
+
+ ## Inspired from : 
+ 
+ - Emily : https://www.youtube.com/watch?v=gMZsc3cvwKs , https://bitbucket.org/runhello/emily/wiki/Home
+ - Next Great Functional Language : https://www.youtube.com/watch?v=buQNgW-voAg
