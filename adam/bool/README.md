@@ -1,5 +1,8 @@
-A simple representation of the boolean typeas a category.
+A simple representation of the boolean type as a category.
 
-We define values to get the order for the representation
+Category Representation : 
+- Objects are directories, where each directory is the representation of a category
+- Morphisms are files, containing one or more implementation of the morphism, using existing objects and morphisms
 
-We then define morphisms via truth tables, since we need to get dual argument function, this seems simplest.
+Boolean Category, for classical logic, we have two objects (values) : T and F, and one isomorphism : not
+

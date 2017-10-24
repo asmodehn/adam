@@ -1,8 +1,9 @@
-While it is possible to represent everything with tables like for bool, it quickly becomes painful.
+A simple representation of the integer type (circular, up to 42) as a category.
 
-A better way is needed, even for a constructive representation based on possible values.
+Category Representation : 
+- Objects are directories, where each directory is the representation of a category
+- Morphisms are files, containing one or more implementation of the morphism, using existing objects and morphisms
 
-One could curry n argument functions, but it leads to an implosion in projection of a function along one of the arguments, so we just moved the complexity from inside the file to outside.
-We should attempt to keep function complexity encapsulated in it,and therefore would prefer a more structure file syntax...
+Integer >= 42 Category, we have 42 objects (values) in total order : 0 to 42, with a successor morphism defined between each object. For convenience we also embed the cocategory and the predecessor morphisms (cosuccessors)
+Note : although they are not defined, the composition of these morphisms exist in this category, for it to be a category.
 
-However we want to keep file syntax to a minimum ( ogdl style ) so it looks ilke we cannot avoid repeating the second argument...
