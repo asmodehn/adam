@@ -100,7 +100,8 @@ Also we will try to match the representation to something fitting the familiar f
  ##### Natural Transformation : ?
 
 
- ## Inspired from : 
+ ## Various related ideas : 
  
  - Emily : https://www.youtube.com/watch?v=gMZsc3cvwKs , https://bitbucket.org/runhello/emily/wiki/Home
  - Next Great Functional Language : https://www.youtube.com/watch?v=buQNgW-voAg
+ - Concatenative Languages : http://concatenative.org/wiki/view/Concatenative%20language
