@@ -3,24 +3,7 @@ import cmd
 import types
 from inspect import signature
 
-stk = []
-
-# Forth - like stack operators
-# the needed arguments are retrieve from the top of the stack (reversed) is passed as arguments
-def dup(a):  # ( a -- a a )
-    return [a, a]
-
-def drop(s):  # ( a --  )
-    return s[1:]
-
-def swap(s):  # ( a b -- b a )
-    return s[1] + s[0] + s[2:]
-
-def over(s):  # ( a b -- a b a )
-    return s[0:1] + s[0] + s[2:]
-
-def rot(s):  # ( a b c -- b c a )
-    return s[1:2] + s[0] + s[3:]
+from svm import stk_set, stk_get, dup, drop, swap, over, rot
 
 #TODO : unify interface using list of args.
 # combinators
@@ -60,8 +43,6 @@ class StackREPL(cmd.Cmd):
         'W': lambda x: x,
     }
 
-
-
     # interpreter with the host language features
     def evl(self, xpr):
         for c in xpr:
@@ -70,51 +51,28 @@ class StackREPL(cmd.Cmd):
             except Exception:
                 raise  # TODO : proper handling...
 
-    def push(self, *arg):
-        for a in arg:
-            stk.append(a)
-        # TODO : check for max size
-
-    def pop(self, n=1):
-        res = []
-        for i in range(n):
-            res += stk.pop()
-        return res
-
     def prompt_refresh(self):
-        self.prompt = '[ ' + " ".join(stk) + ' < '
-
+        # note : we need the reversed stack for a left prompt
+        self.prompt = '[ ' + " ".join(reversed(tuple(stk_get()))) + ' < '
 
     def do_dup(self, arg):
         """duplicates its argument and push it up to the stack.
-        Extra arguments are treated before, following stack semantics. This might seem a bit confusing and might be improved by switching prefix/postfix input semantics and repl design
+        Extra arguments are treated before, following stack semantics.
+        This might seem a bit confusing and might be improved by switching prefix/postfix input semantics and repl design...
         """
-        # for stack semantics on args
-        args = stk + arg.split()[::-1]
-        #finding number of args of the command
-        argsnb = len(signature(dup).parameters)
-        # removing them from the stack
-        self.pop(argsnb)
-        # doing the computation
-        newargs = dup(*args[-argsnb:])
-        # pushing result onto the stack
-        self.push(*newargs)
+        stk_set(*dup(*stk_get()))
 
     def do_drop(self, arg):
-        drop(reversed(arg.split())[0])
-        self.push(*['drop'] + arg.split())
+        stk_set(*drop(*stk_get()))
 
     def do_swap(self, arg):
-        self.stack(*['swap'] + arg.split())
-        self.prompt_refresh()
+        stk_set(*swap(*stk_get()))
 
     def do_over(self, arg):
-        self.stack(*['over'] + arg.split())
-        self.prompt_refresh()
+        stk_set(*over(*stk_get()))
 
     def do_rot(self, arg):
-        self.stack(*['rot'] + arg.split())
-        self.prompt_refresh()
+        stk_set(*rot(*stk_get()))
 
     def default(self, line):
         """Called on an input line when the command prefix is not recognized.
@@ -122,10 +80,8 @@ class StackREPL(cmd.Cmd):
         """
         # lets extract the command
         cmd, arg, line = self.parseline(line)
-        # an add it to the stack
-        self.push(cmd)
-        # recurse if string not empty
-        if arg: self.onecmd(arg)
+        # an add it to the stack (PUSH)
+        stk_set(cmd, *stk_get())
 
     def emptyline(self):
         """
@@ -133,34 +89,37 @@ class StackREPL(cmd.Cmd):
         This executes one computation on the existing stack
         :return:
         """
-        self.onecmd(" ".join(stk))
+        self.onecmd(" ".join(stk_get()))
 
-    def parseline(self, line):
-        """Parse the line into a command name and a string containing
-        the arguments.  Returns a tuple containing (command, args, line).
-        'command' and 'args' may be None if the line couldn't be parsed.
-
-        Note this is the reverse as the default cmd implementation : the last word is the command.
-        """
-        line = line.strip()
-        if not line:
-            return None, None, line
-        elif line[-1] == '?':
-            line = line[:-1] + ' help'
-        elif line[-1] == '!':
-            if hasattr(self, 'do_shell'):
-                line = line[:-1] + ' shell'
-            else:
-                return None, None, line
-        i, n = 0, len(line)
-        while i < n and line[-i] in self.identchars: i = i + 1
-        cmd, arg = line[-i:].strip(), line[:-i]
-
-        return cmd, arg, line
+    # def parseline(self, line):
+    #     """Parse the line into a command name and a string containing
+    #     the arguments.  Returns a tuple containing (command, args, line).
+    #     'command' and 'args' may be None if the line couldn't be parsed.
+    #
+    #     Note this is the reverse as the default cmd implementation : the last word is the command.
+    #     """
+    #     line = line.strip()
+    #     if not line:
+    #         return None, None, line
+    #     elif line[-1] == '?':
+    #         line = line[:-1] + ' help'
+    #     elif line[-1] == '!':
+    #         if hasattr(self, 'do_shell'):
+    #             line = line[:-1] + ' shell'
+    #         else:
+    #             return None, None, line
+    #     i, n = 0, len(line)
+    #     while i < n and line[-i] in self.identchars: i = i + 1
+    #     cmd, arg = line[-i:].strip(), line[:-i]
+    #
+    #     return cmd, arg, line
 
     def postcmd(self, stop, line):
         """Hook method executed just after a command dispatch is finished."""
-
+        cmd, arg, line = self.parseline(line)
+        if arg:  # keep rest of the line in cmdqueue, and execute it in cmdloop.
+            self.cmdqueue.append(arg)
+        # update prompt
         self.prompt_refresh()
         return stop
 
@@ -188,11 +147,13 @@ class StackREPL(cmd.Cmd):
         self.close()
         with open(arg) as f:
             self.cmdqueue.extend(f.read().splitlines())
+
     def precmd(self, line):
         line = line.lower()
         if self.file and 'playback' not in line:
             print(line, file=self.file)
         return line
+
     def close(self):
         if self.file:
             self.file.close()
