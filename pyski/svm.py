@@ -83,5 +83,11 @@ def rot(a, b, c, *s):  # ( a b c -- b c a )
 
 # TODO : given its functional nature, decorator can be used for function composition (concatenation) ?
 
+# TODO : look into kernel as a way to implement quotations (like Cat or Joy)
 
-#TODO : since these are pure function, we should memoize them and detect computation errors.
+# TODO : look into cactus/spaghetti stack to implement delimited continuations to allow interpreter reflection and program control
+
+#TODO : since these are pure functions, we should memoize them and detect computation errors. ZAP.
+# Idea : use doctest for this... somehow...
+# Note : Cat has a similar concept with YAML text
+

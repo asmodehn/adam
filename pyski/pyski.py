@@ -32,7 +32,7 @@ class StackREPL(cmd.Cmd):
     Any unknown word will be added to the stack and only considered as (unknown symbolic) param, not command.
     """
     intro = 'Welcome to pyski.   Type help or ? to list commands.\n'
-    prompt = '[ < '
+    prompt = ' '
     file = None
 
     # defining basic combinators with the host language features
@@ -53,7 +53,7 @@ class StackREPL(cmd.Cmd):
 
     def prompt_refresh(self):
         # note : we need the reversed stack for a left prompt
-        self.prompt = '[ ' + " ".join(reversed(tuple(stk_get()))) + ' < '
+        self.prompt = " ".join(reversed(tuple(stk_get()))) + ' '
 
     def do_dup(self, arg):
         """duplicates its argument and push it up to the stack.
@@ -80,8 +80,9 @@ class StackREPL(cmd.Cmd):
         """
         # lets extract the command
         cmd, arg, line = self.parseline(line)
-        # an add it to the stack (PUSH)
-        stk_set(cmd, *stk_get())
+        if cmd:  # checking for ''
+            # an add it to the stack (PUSH)
+            stk_set(cmd, *stk_get())
 
     def emptyline(self):
         """
@@ -89,8 +90,11 @@ class StackREPL(cmd.Cmd):
         This executes one computation on the existing stack
         :return:
         """
-        self.onecmd(" ".join(stk_get()))
+        stkline = " ".join(stk_get())
+        if stkline:
+            self.onecmd(stkline)
 
+    # this parse in the opposite direction
     # def parseline(self, line):
     #     """Parse the line into a command name and a string containing
     #     the arguments.  Returns a tuple containing (command, args, line).
@@ -113,6 +117,28 @@ class StackREPL(cmd.Cmd):
     #     cmd, arg = line[-i:].strip(), line[:-i]
     #
     #     return cmd, arg, line
+
+    def parseline(self, line):
+        """Parse the line into a command name and a string containing
+        the arguments.  Returns a tuple containing (command, args, line).
+        'command' and 'args' may be None if the line couldn't be parsed.
+        """
+        line = line.strip()
+        if not line:
+            return None, None, line
+        elif line[0] == '?':
+            line = 'help ' + line[1:]
+        elif line[0] == '!':
+            if hasattr(self, 'do_shell'):
+                line = 'shell ' + line[1:]
+            else:
+                return None, None, line
+        i, n = 0, len(line)
+        while i < n and line[i] in self.identchars: i = i+1
+        cmd, arg = line[:i], line[i:].strip()
+        return cmd, arg, line
+
+
 
     def postcmd(self, stop, line):
         """Hook method executed just after a command dispatch is finished."""
@@ -162,3 +188,22 @@ class StackREPL(cmd.Cmd):
 
 if __name__ == '__main__':
     StackREPL().cmdloop()
+
+# TODO : separate the evaluator- loop from the read / print loop, to allow to implement word rewriting as a "view/controller" only,
+# where the evaluator is kind of the model  (on top of the VM for operational semantics, and some type checker/theorem proofer for denotational semantics)...
+# maybe even with network protocol in between.
+# HOWEVER the read/print entire state must be kept in the evaluator or the VM (and per user)
+
+# => Our evaluator (as a reflective tower) is always running (in a specific location) , like a server, and need a second input interface to manipulate the stored read/print state.
+# Maybe the read/print state could also be linked to the tower level ???
+
+# an evaluator can usually be split into a free monad and an interpretor. So maybe we need another construct here...
+# But the Free Monad might be the correct math concept that is necessary for a "location" => where current state of computation is kept.
+# Comparing with living system theory, encoder/decoder is not needed in homoiconic language, channel, net and time are hardware devices that can be interfaced with teh language somehow, and associator, decider and memory are all done by the free monad implementation.
+# The transducer is the interpreter.
+# This seems to suggest there would be more to the free monad than just a monad ( how to actually reflection, continuations, etc. ??)...
+# It seems also that the free monad could be the place to store configuration of the ditor as well as hte place to implement "optimization" features for the language
+# (for ex. a term configured in editor and always used could have a direct VM implementation, rather than rewrite it, and use hte implementation of each of its parts...)
+# Maybe there should be a configurable term rewritter between the monad and the interpreter ?? It would rewrite what is unknown by the free monad into what is known... We still need to understand how this is different from the actual interpreter...
+
+# We should keep all this on the side for later, after the curses based view has been developed.
