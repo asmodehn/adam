@@ -100,6 +100,16 @@ Also we will try to match the representation to something fitting the familiar f
  ##### Natural Transformation : ?
 
 
+# Orthogonaly : Implementation Braindump
+
+## Python :
+ 
+ - python "functions", that is routines, are too unrefined (high-level) for our implementation here, because they can take a long time, are indeterministically interruptible, and can be decomposed into coroutines + futures to separate the execution and the result retrieval into the original context.
+ - having one eventloop per thread seems a good start, but we eventually need to manage input/output somehow, and relate that to terminal/pipes (TODO : check ptyprocess package) to be able to debug behaviour in details.
+ - It seems the most basic concept is not a python routine, but something more refined, like a math function (memoizable), inside a never ending loop, that can only communicate to the outside via some logic loopholes (monads). This should allow us to tightly control a computation cost as well as result communication approximation.
+ - Functions are composable inside a loop, but to get out of the loop, monadic functorial code should be used. Composing multiple loops is therefore a higher level construct, akin to a natural transformation or so... More study & experiments are required. 
+ - there is no aiocurses package yet AFAIK, probably because of very incompatible design in libraries but we might think about producing one eventually to factor out what is not specific to adam from the python implementation.
+ 
  ## Various related ideas : 
  
  - Emily : https://www.youtube.com/watch?v=gMZsc3cvwKs , https://bitbucket.org/runhello/emily/wiki/Home

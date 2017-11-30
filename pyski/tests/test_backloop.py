@@ -1,3 +1,5 @@
+import asyncio
+
 from ..backloop import BackgroundLoop
 
 
@@ -32,11 +34,13 @@ def test_bgloop():
     with BackgroundLoop() as bgl:
         bgl.call_soon(task1)
         bgl.call_soon(task2, 42)
-        bgl.call_soon(task3, 42)
+        res3 = bgl.call_soon(task3, 42)
+        assert res3 == 42
+
         bgl.call_soon(coro1)
         bgl.call_soon(coro2, 42)
-        bgl.call_soon(coro3, 42)
-
+        cores3 = bgl.call_soon(coro3, 42)
+        assert cores3 == 42
 
 if __name__ == '__main__':
     import pytest

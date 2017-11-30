@@ -24,27 +24,47 @@ class BackgroundLoop(object):
 
     def _bgthread(self):
         try:
-            return self._loop.run_forever()
+            self._loop.run_forever()
         except Exception:
+            # finishing scheduled tasks
+            pending = asyncio.Task.all_tasks()
+            self._loop.run_until_complete(asyncio.gather(*pending))
             raise
         finally:
+            if hasattr(self._loop, 'shutdown_asyncgens'):  # py3.6
+                self._loop.run_until_complete(self._loop.shutdown_asyncgens())
             self._loop.close()
+        # cannot return directly...
 
     def __enter__(self):
-        # TODO : support using a superseeding eventloop if there is one... (probably monadic style instead of tree-style ?)
+        # TODO : support using a superseeding eventloop if there is one... (probably monadic style - we have limited cpus anyway - instead of tree-style - with max checked ?)
         self._thd = threading.Thread(target=self._bgthread, args=())
         self._thd.start()
         # returning our own wrapped eventloop instance
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:  # exception caught
+            # making exception visible before tripping on async loops
+            print("Exception caught in BackgroundLoop : {exc_type} : {exc_val}\nTraceback: {exc_tb}".format(**locals()))
+
+        self._loop.stop()
+        # self._loop.close()
         self._thd.join()
         # exception will be raised as long as we dont return true
-        pass
+        return
 
     # delegate methods (careful : we are jumping between threads)
+    # note at this point we already have all arguments,
+    # to have runtime equivalence - bisimulation - of corountine and routine calls
     def call_soon(self, callback, *args):
-        self._loop.call_soon_threadsafe(callback, args)
+        if asyncio.iscoroutinefunction(callback):
+            future = asyncio.run_coroutine_threadsafe(callback(*args), self._loop)
+            return future
+        else:
+            # TODO : a better way : result is lost here, and no point to put up with a whole big thread machinery when we have coroutines...
+            handle = self._loop.call_soon_threadsafe(callback, *args)
+            return handle
 
 
 
