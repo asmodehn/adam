@@ -1,5 +1,6 @@
 import curses
 from curses import wrapper
+import asyncio
 
 """
 Using the wrapper function is much cleaner, as you can see. From now on, we'll
@@ -31,15 +32,10 @@ often in the case of games, this is not the desired behavior. Thankfully, curses
 allows non-blocking key input as well.
 """
 
-import time
-import asyncio
-
-
-async def drawbar(stdscr, direction, count, width):
+def drawbar(stdscr, line, direction, count, width):
     try:
-        stdscr.clear()
         # Draw a springy bar
-        stdscr.addstr("#" * count)
+        stdscr.addstr(0, 0, "#" * count)
         count += direction
         if count == width:
             direction = -1
@@ -49,33 +45,80 @@ async def drawbar(stdscr, direction, count, width):
     except asyncio.CancelledError:
         print("draw cancelled. this can happen if the terminal HW access is slow...")
 
+def drawprompt(stdscr, line, str):
+    return
 
-async def schedule(loop, stdscr):
+def print_raw(stdscr, str):
+    stdscr.addstr(str)
+
+
+async def parseinput(stdscr, input):
+    # tokenize
+    tkns = input.split(' ')
+    # build AST
+    return tkns
+
+async def printWT(stdscr, wordlist):
+    stdscr.addstr(' '.join(wordlist))
+
+
+async def interpWT(stdscr, wordlist):
+    return
+
+
+async def parsestk(stdscr, stk):
+    # return current stack
+    return []
+
+
+def update_loop(el, stdscr):
     c = None
-    width = 4
+    width = curses.COLS
     direction = 1
     count = 0
     while c != ord('q'):  # use q for quit
         # TODO : special Ctrl-D for EOF ?? or some ASCII or UTF code ? we want a terminal|IRC feeling...
-        now = loop.time()
+        now = el.time()
 
         c = stdscr.getch()
+        # manage control commands
+        # TODO
+
+        # get user input
+        input = stdscr.getstr()
+
         # Clear out anything else the user has typed in
         curses.flushinp()
-        # If the user pressed p, increase the width of the springy bar
-        if c == ord('p'):
-            width += 1
 
-        draw_task = asyncio.ensure_future(drawbar(stdscr=stdscr, direction=direction, count=count, width=width))
+        if input:
+            # parse it
+            #parse_task= asyncio.ensure_future(parseinput(stdscr=stdscr, input=input))
 
-        # wait until 1/10 of a second has passed
-        await asyncio.sleep(0.1 - loop.time() + now)
+            # draw it immediately
+            print_raw(input)
 
-        if draw_task.done():
-            direction, count = draw_task.result()  # will raise exception if there is any.
-        else:
-            # cancel if we still have a drawing pending...
-            draw_task.cancel()
+        # schedule complex stuff for later
+
+        # anyway move the bar...
+        #draw_task = asyncio.ensure_future(drawbar(stdscr=stdscr,line=3, direction=direction, count=count, width=width))
+
+        # cleaning the window completely for simple dynamic display
+        stdscr.clear()
+
+        drawbar(stdscr=stdscr, line=3, direction=direction, count=count, width=width)
+
+
+        # wait until 1/30 of a second has passed (trying to keep constant 30 fps as much as possible, even under load)
+        await asyncio.sleep(0.03 - loop.time() + now)
+
+        #if draw_task.done():
+        #    direction, count = draw_task.result()  # will raise exception if there is any.
+        #else:
+        #    # cancel if we still have a drawing pending...
+        #    draw_task.cancel()
+
+        # refresh screen
+        stdscr.refresh()
 
     else:
         return 0  # normal exit
@@ -96,11 +139,21 @@ def main(stdscr):
     logging.basicConfig(level=logging.DEBUG)
     warnings.filterwarnings("default", message='', category=Warning, module='', lineno=0, append=False)
 
+    # schedule main task :
+    event_loop.call_soon(update_loop(el=event_loop, stdscr=stdscr))
+
     try:
-        return_value = event_loop.run_until_complete(schedule(loop=event_loop, stdscr=stdscr))
+        return_value = event_loop.run_forever()
         print('return value: {!r}'.format(return_value))
     finally:
+        event_loop.run_until_complete(event_loop.shutdown_asyncgens())
         event_loop.close()
+
+
+
+
+
+
 
 
 """
